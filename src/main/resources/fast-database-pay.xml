@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE database>
+<database name="*">
+
+    <table name="final_pay_order" comment="支付订单">
+
+        <column name="payOrderId" comment="编号" type="int" length="11"
+                primary="true" autoincrement="true" nullable="not null"/>
+
+        <column name="userId" comment="所属用户" type="int" nullable="null"
+                length="11" index="true"/>
+
+        <column name="payOrderCode" comment="订单编号" type="varchar"
+                nullable="null" length="500" index="true"/>
+
+        <column name="payOrderTitle" comment="订单标题" type="varchar"
+                nullable="null" length="500"/>
+
+        <column name="payOrderMoney" comment="订单金额" type="double"
+                nullable="null" length="11,2"/>
+
+        <column name="payOrderData" comment="订单数据" type="text"
+                nullable="null"/>
+
+        <column name="payOrderState" comment="订单状态" type="int"
+                nullable="null" length="11" index="true" render="Enum"/>
+
+        <column name="payOrderType" comment="支付类型" type="int"
+                nullable="null" length="11" index="true" render="Enum"/>
+
+        <column name="orderDateTime" comment="录入时间" type="datetime"
+                nullable="null" length="6" render="NONE"/>
+    </table>
+
+    <table name="final_pay_error" comment="支付密码错误">
+        <column name="errorId" comment="编号" type="int" length="11"
+                primary="true" autoincrement="true" nullable="not null"/>
+
+        <column name="userId" comment="所属用户" type="int" nullable="null"
+                length="11" index="true"/>
+
+        <column name="errorDateTime" comment="录入时间" type="datetime"
+                nullable="null" length="6" render="NONE"/>
+
+    </table>
+
+
+    <table name="final_wx_authorize" comment="微信授权信息">
+        <column name="openid" comment="openid" type="varchar"
+                length="500" nullable="null" index="true"/>
+
+        <column name="nickname" comment="nickname" type="varchar"
+                length="500" nullable="null" charset="utf8mb4"/>
+
+        <column name="headimgurl" comment="headimgurl" type="varchar"
+                length="500" nullable="null"/>
+
+        <column name="sex" comment="sex" type="int" length="11"
+                nullable="null"/>
+
+        <column name="province" comment="province" type="varchar"
+                length="500" nullable="null"/>
+
+        <column name="city" comment="city" type="varchar" length="500"
+                nullable="null"/>
+
+        <column name="country" comment="country" type="varchar"
+                length="500" nullable="null"/>
+
+        <column name="unionid" comment="unionid" type="varchar"
+                length="500" nullable="null"/>
+
+    </table>
+    
+    
+    
+
+
+</database>
