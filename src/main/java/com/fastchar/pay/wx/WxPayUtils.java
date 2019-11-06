@@ -248,7 +248,6 @@ public class WxPayUtils {
 
     /**
      * 根据授权码获得用户信息
-     *
      * @param authorCode
      * @return
      */
@@ -281,14 +280,11 @@ public class WxPayUtils {
             String result = EntityUtils.toString(entity, "utf-8");
 
             Map authMap = FastChar.getJson().fromJson(result, Map.class);
-
             try {
                 EntityUtils.consume(entity);
                 response.close();
             } catch (Exception ignored) {
             }
-
-
             String openid = authMap.get("openid").toString();
             String access_token = authMap.get("access_token").toString();
 

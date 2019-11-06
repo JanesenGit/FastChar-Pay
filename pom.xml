@@ -6,7 +6,7 @@
 
     <groupId>com.fastchar</groupId>
     <artifactId>fastchar-pay</artifactId>
-    <version>1.0</version>
+    <version>1.0.2</version>
 
     <build>
         <plugins>
@@ -16,9 +16,22 @@
                 <configuration>
                     <source>7</source>
                     <target>7</target>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.0.2</version>
+                <configuration>
+                    <archive>
+                        <manifestFile>${basedir}/src/main/java/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+            </plugin>
 
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>

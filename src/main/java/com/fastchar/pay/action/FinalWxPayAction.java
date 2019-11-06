@@ -29,9 +29,10 @@ public class FinalWxPayAction extends FastAction {
             double returnMoney = WxPayUtils.getReturnMoney(callBack);
 
             FinalPayOrderEntity details = FinalPayOrderEntity.dao().getDetails(out_trade_no);
-            if (details != null) {
+            if (details != null && details.getInt("payOrderBack") == FinalPayOrderEntity.PayOrderBackEnum.未回调.ordinal()) {
                 details.set("payOrderMoney", returnMoney);
                 details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已支付.ordinal());
+                details.set("payOrderBack", FinalPayOrderEntity.PayOrderBackEnum.已回调.ordinal());
                 details.update();
 
                 IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
@@ -53,6 +54,10 @@ public class FinalWxPayAction extends FastAction {
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
      * orderData 订单附带数据
+     * #return
+     * 返回data对象的json属性说明：
+     * wx：发起微信支付的参数，直接传入微信sdk中即可！
+     * order：支付订单的信息
      */
     public void app() throws Exception {
         FastWxPayConfig wxPayConfig = FastChar.getConfig(FastWxPayConfig.class);

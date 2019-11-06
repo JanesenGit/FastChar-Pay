@@ -26,9 +26,10 @@ public class FinalAliPayAction extends FastAction {
             double total_amount = getParamToDouble("total_amount");
 
             FinalPayOrderEntity details = FinalPayOrderEntity.dao().getDetails(out_trade_no);
-            if (details != null) {
+            if (details != null && details.getInt("payOrderBack") == FinalPayOrderEntity.PayOrderBackEnum.未回调.ordinal()) {
                 details.set("payOrderMoney", total_amount);
                 details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已支付.ordinal());
+                details.set("payOrderBack", FinalPayOrderEntity.PayOrderBackEnum.已回调.ordinal());
                 details.update();
 
                 IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
@@ -50,6 +51,10 @@ public class FinalAliPayAction extends FastAction {
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
      * orderData 订单附带数据
+     * #return
+     * 返回data对象的json属性说明：
+     * url：发起支付宝支付的url参数，直接传入支付宝sdk中即可！
+     * order：支付订单的信息
      */
     public void app() throws Exception {
         FastAliPayConfig aliPayConfig = FastChar.getConfig(FastAliPayConfig.class);
