@@ -74,9 +74,37 @@
                 length="500" nullable="null"/>
 
     </table>
-    
-    
-    
+
+
+    <table name="final_ali_authorize" comment="支付宝授权信息">
+        <column name="avatar" comment="avatar" type="varchar"
+                length="500" nullable="null"/>
+
+        <column name="city" comment="city" type="varchar" length="500"
+                nullable="null"/>
+
+        <column name="gender" comment="gender" type="varchar"
+                length="500" nullable="null"/>
+
+        <column name="is_certified" comment="is_certified" type="varchar"
+                length="500" nullable="null"/>
+
+        <column name="is_student_certified" comment="is_student_certified"
+                type="varchar" length="500" nullable="null"/>
+
+        <column name="nick_name" comment="nick_name" type="varchar"
+                length="500" nullable="null" charset="utf8mb4"/>
+
+        <column name="province" comment="province" type="varchar"
+                length="500" nullable="null"/>
+
+        <column name="user_id" comment="user_id" type="varchar"
+                length="500" nullable="null"/>
+        <column name="user_status" comment="user_status" type="varchar"
+                length="500" nullable="null"/>
+        <column name="user_type" comment="user_type" type="varchar"
+                length="500" nullable="null"/>
+    </table>
 
 
 </database>

@@ -1,6 +1,9 @@
 package com.fastchar.pay.wx;
 
 import com.fastchar.interfaces.IFastConfig;
+import com.fastchar.pay.exception.WxPayException;
+
+import java.io.File;
 
 public class FastWxPayConfig implements IFastConfig {
 
@@ -163,12 +166,15 @@ public class FastWxPayConfig implements IFastConfig {
      */
     public FastWxPayConfig setCaKeyStorePath(String caKeyStorePath) {
         this.caKeyStorePath = caKeyStorePath;
+        if (!new File(caKeyStorePath).exists()) {
+            throw new WxPayException("微信支付操作证书路径【" + caKeyStorePath + "】不存在！");
+        }
         return this;
     }
 
 
     public enum TradeTypeEnum{
-        JSAPI,//公众号支付
+        JSAPI,//公众号获取小程序支付
         NATIVE,//原生扫码支付
         APP,//app支付
         MICROPAY,//刷卡支付

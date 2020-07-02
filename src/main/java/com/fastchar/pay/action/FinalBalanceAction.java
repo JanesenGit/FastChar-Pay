@@ -2,8 +2,10 @@ package com.fastchar.pay.action;
 
 import com.fastchar.core.FastAction;
 import com.fastchar.core.FastChar;
+import com.fastchar.core.FastHandler;
 import com.fastchar.pay.entity.FinalPayErrorEntity;
 import com.fastchar.pay.entity.FinalPayOrderEntity;
+import com.fastchar.pay.interfaces.IFastBalanceOrderProvider;
 import com.fastchar.pay.interfaces.IFastBalanceProvider;
 import com.fastchar.pay.interfaces.IFastPayListener;
 import com.fastchar.utils.FastStringUtils;
@@ -44,34 +46,61 @@ public class FinalBalanceAction extends FastAction {
             responseJson(-1, "您今日支付密码错误次数已超限！请明日再试！");
         }
 
-        IFastBalanceProvider iFastBalanceListener = FastChar.getOverrides().singleInstance(IFastBalanceProvider.class);
-
-        FinalPayErrorEntity payErrorEntity = new FinalPayErrorEntity();
-        payErrorEntity.set("userId", userId);
-        boolean validatePassword = iFastBalanceListener.validatePassword(userId, payPassword);
-        if (!validatePassword) {
-            payErrorEntity.save();
-            responseJson(-1, "支付失败！支付密码错误！" + errorInfo);
-        }
-
-        double balance = iFastBalanceListener.getBalance(userId);
-        if (orderMoney > balance) {
-            responseJson(-1, "支付失败！您的余额不足！");
-        }
-
-
         FinalPayOrderEntity payOrderEntity = new FinalPayOrderEntity();
         String payOrderCode = FastStringUtils.buildOnlyCode(orderPrefix);
         payOrderEntity.set("payOrderCode", payOrderCode);
         payOrderEntity.set("payOrderTitle", orderTitle);
         payOrderEntity.set("payOrderMoney", orderMoney);
-        payOrderEntity.set("userId", userId);
         payOrderEntity.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已支付.ordinal());
-        payOrderEntity.set("payOrderData", getParam("orderData"));
         payOrderEntity.set("payOrderType", FinalPayOrderEntity.PayOrderTypeEnum.余额.ordinal());
+        payOrderEntity.set("payOrderData", getParam("orderData"));
+        payOrderEntity.setAll(getParamToMap());
+
+        IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
+        if (iFastPayListener != null) {
+            FastHandler handler = new FastHandler();
+            iFastPayListener.onBeforePay(payOrderEntity, handler);
+            if (handler.getCode() != 0) {
+                responseJson(-1, handler.getError());
+            }
+        }
+
+        IFastBalanceProvider iFastBalanceListener = FastChar.getOverrides()
+                .singleInstance(false, IFastBalanceProvider.class);
+
+        FinalPayErrorEntity payErrorEntity = new FinalPayErrorEntity();
+        payErrorEntity.set("userId", userId);
+
+        if (iFastBalanceListener != null) {
+            boolean validatePassword = iFastBalanceListener.validatePassword(userId, payPassword);
+            if (!validatePassword) {
+                payErrorEntity.save();
+                responseJson(-1, "支付失败！支付密码错误！" + errorInfo);
+            }
+
+            double balance = iFastBalanceListener.getBalance(userId);
+            if (orderMoney > balance) {
+                responseJson(-1, "支付失败！您的余额不足！");
+            }
+        }
+
+        IFastBalanceOrderProvider iFastBalanceOrderProvider = FastChar.getOverrides()
+                .singleInstance(false, IFastBalanceOrderProvider.class);
+        if (iFastBalanceOrderProvider != null) {
+            boolean validatePassword = iFastBalanceOrderProvider.validatePassword(payOrderEntity, payPassword);
+            if (!validatePassword) {
+                payErrorEntity.save();
+                responseJson(-1, "支付失败！支付密码错误！" + errorInfo);
+            }
+
+            double balance = iFastBalanceOrderProvider.getBalance(payOrderEntity);
+            if (orderMoney > balance) {
+                responseJson(-1, "支付失败！您的余额不足！");
+            }
+        }
+
 
         if (payOrderEntity.save()) {
-            IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(IFastPayListener.class);
             if (iFastPayListener != null) {
                 iFastPayListener.onPayCallBack(payOrderEntity);
             }

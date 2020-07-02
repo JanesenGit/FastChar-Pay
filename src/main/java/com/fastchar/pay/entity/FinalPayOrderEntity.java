@@ -28,6 +28,7 @@ public class FinalPayOrderEntity extends AbstractFinalPayOrderEntity {
         set("payOrderState", 0);
         set("payOrderType", 0);
         set("payOrderBack", 0);
+        set("userId", -1);
         set("orderDateTime", FastDateUtils.getDateString());
     }
 
@@ -39,8 +40,13 @@ public class FinalPayOrderEntity extends AbstractFinalPayOrderEntity {
 
     public enum PayOrderTypeEnum {
         余额,
-        支付宝,
-        微信
+        支付宝_APP,
+        微信_APP,
+        微信_JS,
+        支付宝_JS,
+        苹果内购,
+        支付宝_Page,
+        微信_Native
     }
 
     public enum PayOrderBackEnum {
