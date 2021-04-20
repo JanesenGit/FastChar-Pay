@@ -1,10 +1,12 @@
 package com.fastchar.pay.action;
 
+import com.alipay.api.response.AlipayTradeAppPayResponse;
+import com.alipay.api.response.AlipayTradePagePayResponse;
 import com.fastchar.core.FastAction;
 import com.fastchar.core.FastChar;
 import com.fastchar.core.FastHandler;
 import com.fastchar.pay.ali.FastAliPayConfig;
-import com.fastchar.pay.ali.AliPayUtils;
+import com.fastchar.pay.ali.FastAliPayUtils;
 import com.fastchar.pay.entity.FinalPayOrderEntity;
 import com.fastchar.pay.interfaces.IFastPayListener;
 import com.fastchar.pay.interfaces.IFastPayProvider;
@@ -45,15 +47,28 @@ public class FinalAliPayAction extends FastAction {
             aliPayConfig = FastChar.getConfig(FastAliPayConfig.class);
         }
 
-        FastHandler handler = AliPayUtils.verifyCallBack(aliPayConfig,getRequest());
+        FastHandler handler = FastAliPayUtils.verifyCallBack(aliPayConfig, getRequest());
         if (handler.getCode() == 0) {
+            if (FastAliPayUtils.isTradeWait(getRequest())) {
+                responseText("success");
+            }
+
             String out_trade_no = getParam("out_trade_no");
             double total_amount = getParamToDouble("total_amount");
 
             FinalPayOrderEntity details = FinalPayOrderEntity.dao().getDetails(out_trade_no);
             if (details != null && details.getInt("payOrderBack") == FinalPayOrderEntity.PayOrderBackEnum.未回调.ordinal()) {
                 details.set("payOrderMoney", total_amount);
-                details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已支付.ordinal());
+
+                if (FastAliPayUtils.isTradeSuccess(getRequest())) {
+                    details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已支付.ordinal());
+                } else if (FastAliPayUtils.isTradeClose(getRequest())) {
+                    details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已关闭.ordinal());
+                } else if (FastAliPayUtils.isTradeFinish(getRequest())) {
+                    details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已结束.ordinal());
+                } else {
+                    details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已失败.ordinal());
+                }
                 details.set("payOrderBack", FinalPayOrderEntity.PayOrderBackEnum.已回调.ordinal());
                 details.update();
 
@@ -71,10 +86,10 @@ public class FinalAliPayAction extends FastAction {
      * 发起支付宝APP支付
      * 参数：
      * userId 用户Id【必填】
-     * orderPrefix 订单前缀【必填】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
+     * orderPrefix 订单前缀【必填，请咨询后台开发人员】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
-     * orderData 订单附带数据
+     * orderData 订单附带数据【请咨询后台开发人员】
      * #return
      * 返回data对象的json属性说明：
      * url：发起支付宝支付的url参数，直接传入支付宝sdk中即可！
@@ -84,8 +99,9 @@ public class FinalAliPayAction extends FastAction {
         setLogResponse(true);
         FastAliPayConfig aliPayConfig = null;
         IFastPayProvider iFastPayProvider = FastChar.getOverrides().singleInstance(false, IFastPayProvider.class);
+        String payConfigCode = null;
         if (iFastPayProvider != null) {
-            String payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.支付宝_APP, this);
+            payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.支付宝_APP, this);
             if (FastStringUtils.isNotEmpty(payConfigCode)) {
                 aliPayConfig = FastChar.getConfig(payConfigCode, FastAliPayConfig.class);
             }
@@ -111,6 +127,7 @@ public class FinalAliPayAction extends FastAction {
         payOrderEntity.set("payOrderData", getParam("orderData"));
         payOrderEntity.set("payOrderType", FinalPayOrderEntity.PayOrderTypeEnum.支付宝_APP.ordinal());
         payOrderEntity.setAll(getParamToMap());
+        payOrderEntity.set("payConfigCode", payConfigCode);
 
         IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
         if (iFastPayListener != null) {
@@ -122,30 +139,29 @@ public class FinalAliPayAction extends FastAction {
         }
 
 
-        String appPay = AliPayUtils.requestAppPay(aliPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney);
-        if (FastStringUtils.isNotEmpty(appPay)) {
+        AlipayTradeAppPayResponse response = FastAliPayUtils.requestAppPay(aliPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney);
+        if (response.isSuccess()) {
             if (payOrderEntity.save()) {
                 Map<String, Object> data = new HashMap<>();
-                data.put("url", appPay);
+                data.put("url", response.getBody());
                 data.put("order", payOrderEntity);
                 responseJson(0, "请求成功！", data);
             } else {
                 responseJson(-1, payOrderEntity.getError());
             }
         }
-        responseJson(-1, "操作失败！请稍后重试！");
+        responseJson(-1, "支付宝调用失败，服务器端错误：" + FastAliPayUtils.getRequestMsg(response));
     }
 
 
-
     /**
-     * 发起支付宝电脑网站支付【请使用form表达跳转提交】
+     * 发起支付宝电脑网站支付【请使用form表单跳转提交】
      * 参数：
      * userId 用户Id【必填】
-     * orderPrefix 订单前缀【必填】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
+     * orderPrefix 订单前缀【必填，请咨询后台开发人员】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
-     * orderData 订单附带数据
+     * orderData 订单附带数据【请咨询后台开发人员】
      * returnUrl 返回页面的路径
      * #return
      * 返回支付宝的网页支付页面
@@ -153,9 +169,10 @@ public class FinalAliPayAction extends FastAction {
     public void page() throws Exception {
         setLogResponse(true);
         FastAliPayConfig aliPayConfig = null;
+        String payConfigCode = null;
         IFastPayProvider iFastPayProvider = FastChar.getOverrides().singleInstance(false, IFastPayProvider.class);
         if (iFastPayProvider != null) {
-            String payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.支付宝_Page, this);
+            payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.支付宝_Page, this);
             if (FastStringUtils.isNotEmpty(payConfigCode)) {
                 aliPayConfig = FastChar.getConfig(payConfigCode, FastAliPayConfig.class);
             }
@@ -182,6 +199,7 @@ public class FinalAliPayAction extends FastAction {
         payOrderEntity.set("payOrderMoney", orderMoney);
         payOrderEntity.set("payOrderData", getParam("orderData"));
         payOrderEntity.set("payOrderType", FinalPayOrderEntity.PayOrderTypeEnum.支付宝_Page.ordinal());
+        payOrderEntity.set("payConfigCode", payConfigCode);
         payOrderEntity.setAll(getParamToMap());
 
         IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
@@ -193,15 +211,15 @@ public class FinalAliPayAction extends FastAction {
             }
         }
 
-        String appPay = AliPayUtils.requestPagePay(aliPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney, returnUrl);
-        if (FastStringUtils.isNotEmpty(appPay)) {
+        AlipayTradePagePayResponse response = FastAliPayUtils.requestPagePay(aliPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney, returnUrl);
+        if (response.isSuccess()) {
             if (payOrderEntity.save()) {
-                responseHtml(appPay);
+                responseHtml(response.getBody());
             } else {
                 responseText(500, payOrderEntity.getError());
             }
         }
-        responseText(500, "操作失败！请稍后重试！");
+        responseJson(-1, "支付宝调用失败，服务器端错误：" + FastAliPayUtils.getRequestMsg(response));
     }
 
 }

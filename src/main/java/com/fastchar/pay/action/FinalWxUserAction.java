@@ -6,7 +6,7 @@ import com.fastchar.pay.entity.FinalPayOrderEntity;
 import com.fastchar.pay.entity.FinalWxAuthorizeEntity;
 import com.fastchar.pay.interfaces.IFastPayProvider;
 import com.fastchar.pay.wx.FastWxPayConfig;
-import com.fastchar.pay.wx.WxPayUtils;
+import com.fastchar.pay.wx.FastWxPayUtils;
 import com.fastchar.utils.FastStringUtils;
 
 import java.util.Map;
@@ -45,7 +45,7 @@ public class FinalWxUserAction extends FastAction {
             wxPayConfig = FastChar.getConfig(FastWxPayConfig.class);
         }
 
-        Map auth_code = WxPayUtils.getUserInfo(wxPayConfig, getParam("auth_code", true));
+        Map auth_code = FastWxPayUtils.getUserInfo(wxPayConfig, getParam("auth_code", true));
         if (auth_code != null) {
             FinalWxAuthorizeEntity authorizeEntity = FinalWxAuthorizeEntity.newInstance();
             authorizeEntity.putAll(auth_code);

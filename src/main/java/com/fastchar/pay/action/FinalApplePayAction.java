@@ -3,12 +3,9 @@ package com.fastchar.pay.action;
 import com.fastchar.core.FastAction;
 import com.fastchar.core.FastChar;
 import com.fastchar.core.FastHandler;
-import com.fastchar.pay.ali.AliPayUtils;
-import com.fastchar.pay.ali.FastAliPayConfig;
 import com.fastchar.pay.apple.ApplePurchaseUtils;
 import com.fastchar.pay.entity.FinalPayOrderEntity;
 import com.fastchar.pay.interfaces.IFastPayListener;
-import com.fastchar.pay.interfaces.IFastPayProvider;
 import com.fastchar.utils.FastStringUtils;
 
 import java.util.HashMap;
@@ -58,10 +55,10 @@ public class FinalApplePayAction extends FastAction {
      * 发起苹果内购支付
      * 参数：
      * userId 用户Id【必填】
-     * orderPrefix 订单前缀【必填】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
+     * orderPrefix 订单前缀【必填，请咨询后台开发人员】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
-     * orderData 订单附带数据
+     * orderData 订单附带数据【请咨询后台开发人员】
      * #return
      * 返回data对象的json属性说明：
      * order：支付订单的信息

@@ -21,7 +21,7 @@ public class FinalBalanceAction extends FastAction {
      * 发起余额支付
      * 参数：
      * userId 用户编号【必填】{int}
-     * payPassword 支付密码【必填】
+     * payPassword 支付密码【必填，MD5加密后提交】
      * orderPrefix 订单前缀【必填】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}

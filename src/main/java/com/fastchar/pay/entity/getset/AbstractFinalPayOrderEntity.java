@@ -76,4 +76,8 @@ public abstract class AbstractFinalPayOrderEntity extends FastEntity<FinalPayOrd
         return getInt("userId");
     }
 
+
+    public String getPayConfigCode() {
+        return getString("payConfigCode");
+    }
 }

@@ -1,7 +1,9 @@
 package com.fastchar.pay.ali;
 
+import com.fastchar.annotation.AFastClassFind;
 import com.fastchar.interfaces.IFastConfig;
 
+@AFastClassFind(value = "com.alipay.api.AlipayClient", url = "https://mvnrepository.com/artifact/com.alipay.sdk/alipay-sdk-java")
 public class FastAliPayConfig implements IFastConfig {
 
     /**
@@ -70,6 +72,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 支付宝商户PID，从支付宝商户平台中查看
+     *
      * @param partner 商户PID
      * @return 当前对象
      */
@@ -84,6 +87,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 支付宝收款账号，一般为支付宝的登录账号
+     *
      * @param seller 收款账户
      * @return 当前对象
      */
@@ -100,6 +104,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 支付宝商户私钥，pkcs8格式，自己使用支付宝工具生成，并前往支付宝开发平台进行配置
+     *
      * @param rsaPrivate 私钥
      * @return 当前对象
      */
@@ -113,7 +118,8 @@ public class FastAliPayConfig implements IFastConfig {
     }
 
     /**
-     *  支付宝公钥（不是应用公钥） 从支付宝开发平台中查看，一般用户支付宝提现转账等功能
+     * 支付宝公钥（不是应用公钥） 从支付宝开发平台中查看，一般用户支付宝提现转账等功能
+     *
      * @param rsaPublic 公钥
      * @return 当前对象
      */
@@ -128,6 +134,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 支付回调地址
+     *
      * @param notifyUrl 回调地址
      * @return 当前对象
      */
@@ -142,6 +149,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 支付宝应用Id，从支付宝开发平台中查看
+     *
      * @param appId 应用ID
      * @return 当前对象
      */
@@ -156,6 +164,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 设置H5支付成功后跳转的页面
+     *
      * @param wapReturnUrl 跳转的页面
      * @return 当前对象
      */
@@ -170,6 +179,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 设置授权的Token
+     *
      * @param appAuthToken 授权token
      * @return 当前对象
      */
@@ -185,6 +195,7 @@ public class FastAliPayConfig implements IFastConfig {
     /**
      * 设置支付宝签名方式，默认是RSA，如果使用RSA2，请配置为RSA2
      * 注意，如果使用支付宝默认创建的2.0应用，请必须设置为RSA2格式
+     *
      * @param algorithm 签名方式
      * @return 当前对象
      */
@@ -199,6 +210,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 设置服务商的PID
+     *
      * @param signAlgorithms 服务商的PID
      * @return 当前对象
      */
@@ -213,6 +225,7 @@ public class FastAliPayConfig implements IFastConfig {
 
     /**
      * 设置编码方式
+     *
      * @param defaultCharset 编码方式，默认utf-8
      * @return 当前对象
      */

@@ -31,6 +31,9 @@
         <column name="payOrderBack" comment="回调状态" type="int"
                 nullable="null" length="11" index="true" render="Enum"/>
 
+        <column name="payConfigCode" comment="支付通道配置Key" type="varchar"
+                nullable="null" length="500"/>
+
         <column name="orderDateTime" comment="录入时间" type="datetime"
                 nullable="null" length="6" render="NONE"/>
     </table>

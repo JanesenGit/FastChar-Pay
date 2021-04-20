@@ -3,12 +3,12 @@ package com.fastchar.pay.action;
 import com.fastchar.core.FastAction;
 import com.fastchar.core.FastChar;
 import com.fastchar.core.FastHandler;
-import com.fastchar.pay.ali.FastAliPayConfig;
 import com.fastchar.pay.entity.FinalPayOrderEntity;
 import com.fastchar.pay.interfaces.IFastPayListener;
 import com.fastchar.pay.interfaces.IFastPayProvider;
 import com.fastchar.pay.wx.FastWxPayConfig;
-import com.fastchar.pay.wx.WxPayUtils;
+import com.fastchar.pay.wx.FastWxPayUtils;
+import com.fastchar.utils.FastBooleanUtils;
 import com.fastchar.utils.FastStringUtils;
 
 import java.io.IOException;
@@ -48,16 +48,20 @@ public class FinalWxPayAction extends FastAction {
             wxPayConfig = FastChar.getConfig(FastWxPayConfig.class);
         }
 
-        Map<String, String> callBack = WxPayUtils.getCallBack(getRequest());
-        FastHandler handler = WxPayUtils.verifyCallBack(wxPayConfig,callBack);
+        Map<String, String> callBack = FastWxPayUtils.getCallBack(getRequest());
+        FastHandler handler = FastWxPayUtils.verifyCallBack(wxPayConfig, callBack);
         if (handler.getCode() == 0) {
-            String out_trade_no = callBack.get("out_trade_no");
-            double returnMoney = WxPayUtils.getReturnMoney(callBack);
+            String out_trade_no = FastStringUtils.defaultValue(callBack.get("out_trade_no"), "none");
+            double returnMoney = FastWxPayUtils.getReturnMoney(callBack);
 
             FinalPayOrderEntity details = FinalPayOrderEntity.dao().getDetails(out_trade_no);
             if (details != null && details.getInt("payOrderBack") == FinalPayOrderEntity.PayOrderBackEnum.未回调.ordinal()) {
                 details.set("payOrderMoney", returnMoney);
-                details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已支付.ordinal());
+                if (FastWxPayUtils.isTradeSuccess(callBack)) {
+                    details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已支付.ordinal());
+                } else {
+                    details.set("payOrderState", FinalPayOrderEntity.PayOrderStateEnum.已失败.ordinal());
+                }
                 details.set("payOrderBack", FinalPayOrderEntity.PayOrderBackEnum.已回调.ordinal());
                 details.update();
 
@@ -76,10 +80,10 @@ public class FinalWxPayAction extends FastAction {
      * 发起微信APP支付
      * 参数：
      * userId 用户Id【必填】
-     * orderPrefix 订单前缀【必填】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
+     * orderPrefix 订单前缀【必填，请咨询后台开发人员】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
-     * orderData 订单附带数据
+     * orderData 订单附带数据【请咨询后台开发人员】
      * #return
      * 返回data对象的json属性说明：
      * wx：发起微信支付的参数，直接传入微信sdk中即可！
@@ -88,9 +92,10 @@ public class FinalWxPayAction extends FastAction {
     public void app() throws Exception {
         setLogResponse(true);
         FastWxPayConfig wxPayConfig = null;
+        String payConfigCode = null;
         IFastPayProvider iFastPayProvider = FastChar.getOverrides().singleInstance(false, IFastPayProvider.class);
         if (iFastPayProvider != null) {
-            String payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.微信_APP, this);
+            payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.微信_APP, this);
             if (FastStringUtils.isNotEmpty(payConfigCode)) {
                 wxPayConfig = FastChar.getConfig(payConfigCode, FastWxPayConfig.class);
             }
@@ -115,6 +120,7 @@ public class FinalWxPayAction extends FastAction {
         payOrderEntity.set("payOrderMoney", orderMoney);
         payOrderEntity.set("payOrderType", FinalPayOrderEntity.PayOrderTypeEnum.微信_APP.ordinal());
         payOrderEntity.set("payOrderData", getParam("orderData"));
+        payOrderEntity.set("payConfigCode", payConfigCode);
         payOrderEntity.setAll(getParamToMap());
 
         IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
@@ -127,10 +133,9 @@ public class FinalWxPayAction extends FastAction {
         }
 
 
-        Map<String, Object> appPay = WxPayUtils.requestAppPay(wxPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney, getRemoteIp());
+        Map<String, Object> appPay = FastWxPayUtils.requestAppPay(wxPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney, getRemoteIp());
         if (appPay != null) {
-            String msg = appPay.get("msg").toString();
-            if (msg.toLowerCase().equals("ok")) {
+            if (FastBooleanUtils.formatToBoolean(appPay.get("success"))) {
                 if (payOrderEntity.save()) {
                     Map<String, Object> data = new HashMap<>();
                     data.put("wx", appPay);
@@ -140,7 +145,7 @@ public class FinalWxPayAction extends FastAction {
                     responseJson(-1, payOrderEntity.getError());
                 }
             } else {
-                responseJson(-1, "微信APP支付调用失败，服务器端错误：" + msg);
+                responseJson(-1, "微信APP支付调用失败，服务器端错误：" + appPay.get("msg"));
             }
         }
         responseJson(-1, "操作失败！请稍后重试！");
@@ -152,10 +157,10 @@ public class FinalWxPayAction extends FastAction {
      * 参数：
      * userId 用户Id【必填】
      * openid 微信OpenId【必填】
-     * orderPrefix 订单前缀【必填】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
+     * orderPrefix 订单前缀【必填，请咨询后台开发人员】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
-     * orderData 订单附带数据
+     * orderData 订单附带数据【请咨询后台开发人员】
      * #return
      * 返回data对象的json属性说明：
      * wx：发起微信支付的参数，直接传入微信sdk中即可！
@@ -164,9 +169,10 @@ public class FinalWxPayAction extends FastAction {
     public void js() throws Exception {
         setLogResponse(true);
         FastWxPayConfig wxPayConfig = null;
+        String payConfigCode = null;
         IFastPayProvider iFastPayProvider = FastChar.getOverrides().singleInstance(false, IFastPayProvider.class);
         if (iFastPayProvider != null) {
-            String payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.微信_JS, this);
+            payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.微信_JS, this);
             if (FastStringUtils.isNotEmpty(payConfigCode)) {
                 wxPayConfig = FastChar.getConfig(payConfigCode, FastWxPayConfig.class);
             }
@@ -192,6 +198,7 @@ public class FinalWxPayAction extends FastAction {
         payOrderEntity.set("payOrderMoney", orderMoney);
         payOrderEntity.set("payOrderType", FinalPayOrderEntity.PayOrderTypeEnum.微信_JS.ordinal());
         payOrderEntity.set("payOrderData", getParam("orderData"));
+        payOrderEntity.set("payConfigCode", payConfigCode);
         payOrderEntity.setAll(getParamToMap());
 
         IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
@@ -204,10 +211,9 @@ public class FinalWxPayAction extends FastAction {
         }
 
 
-        Map<String, Object> appPay = WxPayUtils.requestJSAPIPay(wxPayConfig, openid, payOrderCode, orderTitle, orderTitle, orderMoney, getRemoteIp());
+        Map<String, Object> appPay = FastWxPayUtils.requestJSAPIPay(wxPayConfig, openid, payOrderCode, orderTitle, orderTitle, orderMoney, getRemoteIp());
         if (appPay != null) {
-            String msg = appPay.get("msg").toString();
-            if (msg.toLowerCase().equals("ok")) {
+            if (FastBooleanUtils.formatToBoolean(appPay.get("success"))) {
                 if (payOrderEntity.save()) {
                     Map<String, Object> data = new HashMap<>();
                     data.put("wx", appPay);
@@ -217,7 +223,7 @@ public class FinalWxPayAction extends FastAction {
                     responseJson(-1, payOrderEntity.getError());
                 }
             } else {
-                responseJson(-1, "微信JS支付调用失败，服务器端错误：" + msg);
+                responseJson(-1, "微信JS支付调用失败，服务器端错误：" + appPay.get("msg"));
             }
         }
         responseJson(-1, "操作失败！请稍后重试！");
@@ -228,10 +234,10 @@ public class FinalWxPayAction extends FastAction {
      * 发起微信电脑网站支付,扫商户二维码支付
      * 参数：
      * userId 用户Id【必填】
-     * orderPrefix 订单前缀【必填】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
+     * orderPrefix 订单前缀【必填，请咨询后台开发人员】 生成订单的时候使用前缀，例如：BUY20191235123123412，前缀：BUY
      * orderTitle 订单标题【必填】
      * orderMoney 订单金额(元)【必填】{double}
-     * orderData 订单附带数据
+     * orderData 订单附带数据【请咨询后台开发人员】
      * #return
      * 返回data对象的json属性说明：
      * wx：发起微信支付参数集合，其中code为生成二维码的内容
@@ -240,9 +246,10 @@ public class FinalWxPayAction extends FastAction {
     public void page() throws Exception {
         setLogResponse(true);
         FastWxPayConfig wxPayConfig = null;
+        String payConfigCode = null;
         IFastPayProvider iFastPayProvider = FastChar.getOverrides().singleInstance(false, IFastPayProvider.class);
         if (iFastPayProvider != null) {
-            String payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.微信_Native, this);
+            payConfigCode = iFastPayProvider.getPayConfigCode(FinalPayOrderEntity.PayOrderTypeEnum.微信_Native, this);
             if (FastStringUtils.isNotEmpty(payConfigCode)) {
                 wxPayConfig = FastChar.getConfig(payConfigCode, FastWxPayConfig.class);
             }
@@ -267,6 +274,7 @@ public class FinalWxPayAction extends FastAction {
         payOrderEntity.set("payOrderMoney", orderMoney);
         payOrderEntity.set("payOrderType", FinalPayOrderEntity.PayOrderTypeEnum.微信_Native.ordinal());
         payOrderEntity.set("payOrderData", getParam("orderData"));
+        payOrderEntity.set("payConfigCode", payConfigCode);
         payOrderEntity.setAll(getParamToMap());
 
         IFastPayListener iFastPayListener = FastChar.getOverrides().singleInstance(false, IFastPayListener.class);
@@ -279,10 +287,9 @@ public class FinalWxPayAction extends FastAction {
         }
 
 
-        Map<String, Object> appPay = WxPayUtils.requestNativePay(wxPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney, getRemoteIp());
+        Map<String, Object> appPay = FastWxPayUtils.requestNativePay(wxPayConfig, payOrderCode, orderTitle, orderTitle, orderMoney, getRemoteIp());
         if (appPay != null) {
-            String msg = appPay.get("msg").toString();
-            if (msg.toLowerCase().equals("ok")) {
+            if (FastBooleanUtils.formatToBoolean(appPay.get("success"))) {
                 if (payOrderEntity.save()) {
                     Map<String, Object> data = new HashMap<>();
                     data.put("wx", appPay);
@@ -292,7 +299,7 @@ public class FinalWxPayAction extends FastAction {
                     responseJson(-1, payOrderEntity.getError());
                 }
             } else {
-                responseJson(-1, "微信APP支付调用失败，服务器端错误：" + msg);
+                responseJson(-1, "微信APP支付调用失败，服务器端错误：" + appPay.get("msg"));
             }
         }
         responseJson(-1, "操作失败！请稍后重试！");

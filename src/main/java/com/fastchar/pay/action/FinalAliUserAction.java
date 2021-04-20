@@ -2,13 +2,11 @@ package com.fastchar.pay.action;
 
 import com.fastchar.core.FastAction;
 import com.fastchar.core.FastChar;
-import com.fastchar.pay.ali.AliPayUtils;
+import com.fastchar.pay.ali.FastAliPayUtils;
 import com.fastchar.pay.ali.FastAliPayConfig;
 import com.fastchar.pay.entity.FinalAliAuthorizeEntity;
 import com.fastchar.pay.entity.FinalPayOrderEntity;
-import com.fastchar.pay.entity.FinalWxAuthorizeEntity;
 import com.fastchar.pay.interfaces.IFastPayProvider;
-import com.fastchar.pay.wx.WxPayUtils;
 import com.fastchar.utils.FastStringUtils;
 
 import java.util.Map;
@@ -44,7 +42,7 @@ public class FinalAliUserAction extends FastAction {
         if (aliPayConfig == null) {
             aliPayConfig = FastChar.getConfig(FastAliPayConfig.class);
         }
-        Map auth_code = AliPayUtils.getUserInfo(aliPayConfig, getParam("auth_code", true));
+        Map auth_code = FastAliPayUtils.getUserInfo(aliPayConfig, getParam("auth_code", true));
         if (auth_code != null) {
             FinalAliAuthorizeEntity authorizeEntity = FinalAliAuthorizeEntity.newInstance();
             authorizeEntity.putAll(auth_code);
